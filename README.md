@@ -3,8 +3,6 @@ import json
 
 # ===== ဒီနေရာမှာ ခင်ဗျားရဲ့ API Key ကို ထည့်ပါ =====
 API_KEY = "AIzaSy..."  # အထက်မှာရထားတဲ့ ကုဒ်ကို ဒီမှာ ကူးထည့်ပါ
-# ================================================
-
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
 print("=== 🧠 Huchika Agent (Gemini AI ဗားရှင်း) ===")
