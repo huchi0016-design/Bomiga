@@ -1,7 +1,36 @@
-print("=== 🤖 Huchika Agent စကားပြန်စနစ် ===")
-print("မေးချင်တာမေးပါ။ (ထွက်ချင်ရင် 'ထွက်' လို့ရိုက်ပါ)")
-print("----------------------------------------")
+import requests
+import json
 
+# ===== ဒီနေရာမှာ ခင်ဗျားရဲ့ API Key ကို ထည့်ပါ =====
+API_KEY = "AIzaSy..."  # အထက်မှာရထားတဲ့ ကုဒ်ကို ဒီမှာ ကူးထည့်ပါ
+# ================================================
+
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+
+print("=== 🧠 Huchika Agent (Gemini AI ဗားရှင်း) ===")
+print("ဘာမေးမေးဖြေနိုင်ပါပြီ။ (ထွက်ချင်ရင် 'ထွက်' လို့ရိုက်ပါ)")
+print("------------------------------------------------")
+
+def ask_gemini(question):
+    """Gemini AI ကို မေးခွန်းမေးပြီး အဖြေရယူတယ်"""
+    payload = {
+        "contents": [{
+            "parts": [{"text": question}]
+        }]
+    }
+    headers = {"Content-Type": "application/json"}
+    
+    try:
+        response = requests.post(GEMINI_URL, json=payload, headers=headers)
+        data = response.json()
+        
+        # Gemini ရဲ့ အဖြေကို ထုတ်ယူတယ်
+        answer = data["candidates"][0]["content"]["parts"][0]["text"]
+        return answer
+    except Exception as e:
+        return f"AI ကို ဆက်သွယ်ရာမှာ အမှားရှိနေတယ်။ Error: {e}"
+
+# စကားပြောစက်ဝိုင်း (Loop)
 while True:
     user_input = input("သင့်မေးခွန်း: ")
     
@@ -9,30 +38,8 @@ while True:
         print("Huchika Agent: နောက်မှပြန်တွေ့မယ်။ ကျေးဇူးပါ။ 👋")
         break
     
-    elif "နေကောင်းလား" in user_input or "သက်တောင့်သက်သာ" in user_input:
-        print("Huchika Agent: ကျေးဇူးပါ၊ ကျွန်တော် အဆင်ပြေပါတယ်။ ခင်ဗျားရော နေကောင်းလား? 😊")
-        
-    elif "အမည်" in user_input or "နာမည်" in user_input:
-        print("Huchika Agent: ကျွန်တော့်နာမည်က 'Huchika Agent' ပါ။ 🤖")
-        
-    elif "ဘာလုပ်လို့ရလဲ" in user_input or "လုပ်ဆောင်ချက်" in user_input:
-        print("Huchika Agent: ကျွန်တော် နေကောင်းလား မေးတာ၊ နာမည်မေးတာ၊ သင်္ချာတွက်တာ လုပ်ပေးနိုင်ပါတယ်။")
-        print("ဥပမာ - '၂ ပေါင်း ၃ ဘယ်လောက်လဲ' လို့မေးကြည့်ပါ။")
-        
-    elif "ပေါင်း" in user_input:
-        print("ဂဏန်းနှစ်လုံးကို ကော်မာခြားပြီး ရိုက်ထည့်ပါ (ဥပမာ - 5,3): ")
-        nums = input("ဂဏန်းများ: ")
-        try:
-            num_list = nums.split(",")
-            a = int(num_list[0].strip())
-            b = int(num_list[1].strip())
-            print(f"Huchika Agent: {a} + {b} = {a + b} ပါ။ 🧮")
-        except:
-            print("Huchika Agent: ဂဏန်းတွေ သေချာထည့်ပေးပါ။ (ဥပမာ - 5,3)")
-            
-    elif "ကျေးဇူး" in user_input:
-        print("Huchika Agent: ရပါတယ်၊ ဝမ်းသာပါတယ်။ ✨")
-        
-    else:
-        print("Huchika Agent: အာ်... ကျွန်တော် ဒီစကားကို နားမလည်သေးဘူး။")
-        print("'နေကောင်းလား'၊ 'နာမည်'၊ 'ဘာလုပ်လို့ရလဲ' လို့မေးပါ။")
+    # Gemini AI ကို မေးခွန်းပို့ပြီး အဖြေယူမယ်
+    print("Huchika Agent: ", end="")
+    reply = ask_gemini(user_input)
+    print(reply)
+    print("------------------------------------------------")
