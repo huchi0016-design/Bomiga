@@ -1,0 +1,51 @@
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const CHAT_ID = "-1002057067184";
+
+async function getWeather() {
+  const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=16.8661&longitude=96.1951&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m&timezone=Asia%2FYangon");
+  const d = await res.json();
+  return d.current;
+}
+async function getRSS(url) {
+  const res = await fetch(url);
+  const xml = await res.text();
+  const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 5);
+  return items.map(m => {
+    const t = (m[1].match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [,''])[1];
+    return (t||'').trim();
+  }).filter(Boolean);
+}
+async function getNews() {
+  const tech = await getRSS("https://feeds.arstechnica.com/arstechnica/technology-lab").catch(()=>[]);
+  const world = await getRSS("https://feeds.bbci.co.uk/news/world/rss.xml").catch(()=>[]);
+  return { tech, world };
+}
+async function askGemini(prompt) {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+  });
+  const d = await res.json();
+  return d?.candidates?.[0]?.content?.parts?.[0]?.text || "generation failed";
+}
+async function sendTelegram(text) {
+  const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: "HTML" })
+  });
+  return res.json();
+}
+async function main() {
+  const slot = process.argv[2] || "general";
+  const weather = await getWeather().catch(() => null);
+  const news = await getNews();
+  let prompt = `မြန်မာဘာသာဖြင့် Telegram post ရေးပါ။ HTML tags (<b>,<i>) ok, markdown မသုံးပါနဲ့။ ခေါင်းစဉ်ပါထည့်ပါ.\n\n`;
+  if (slot === "weather") prompt += `ရန်ကုန်ရာသီဥတု: အပူချိန် ${weather?.temperature_2m}°C, စိုထိုင်းဆ ${weather?.relative_humidity_2m}%, လေ ${weather?.wind_speed_10m}km/h ကိုအခြေခံပြီး ရာသီဥတုအကျဉ်းချုပ် ရေးပါ။`;
+  else if (slot === "tech") prompt += `AI/Tech သတင်းခေါင်းစဉ်များ: ${news.tech.join(", ")}`;
+  else if (slot === "war") prompt += `ကမ္ဘာ့ပဋိပက္ခသတင်းခေါင်းစဉ်များ: ${news.world.join(", ")}`;
+  else prompt += `AI/Tech: ${news.tech.join(", ")}\nကမ္ဘာ့ပဋိပက္ခ: ${news.world.join(", ")}\nရာသီဥတု: ${weather?.temperature_2m}°C\nအားလုံးပေါင်းစပ်ပြီး တစ်နေ့စာ အကျဉ်းချုပ် ရေးပါ။`;
+  const content = await askGemini(prompt);
+  console.log(JSON.stringify(await sendTelegram(content.slice(0, 4000))));
+}
+main().catch(e => { console.error(e); process.exit(1); });
